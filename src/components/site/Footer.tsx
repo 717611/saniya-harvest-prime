@@ -1,4 +1,7 @@
-import { Leaf, Phone, Mail, MapPin, Facebook, Instagram, Youtube, MessageCircle } from "lucide-react";
+import { Leaf, Phone, Mail, MapPin, MessageCircle, Camera, Play, Share2 } from "lucide-react";
+const Facebook = Share2;
+const Instagram = Camera;
+const Youtube = Play;
 
 export function Footer() {
   return (
