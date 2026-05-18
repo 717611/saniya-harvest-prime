@@ -18,13 +18,59 @@ const floating = [
 export function Hero() {
   return (
     <section id="home" className="relative pt-20 lg:pt-24 overflow-hidden">
+      {/* Cinematic layered background */}
       <div className="absolute inset-0 -z-10">
         <img
           src={heroField}
-          alt="Lush green agricultural field at sunrise"
-          className="w-full h-full object-cover opacity-25"
+          alt="Lush green agricultural field at golden sunrise"
+          className="w-full h-full object-cover object-[60%_60%] lg:object-[center_70%] opacity-40 lg:opacity-55"
+          loading="eager"
+          fetchPriority="high"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-cream via-cream/85 to-background" />
+        {/* Warm sunlight wash (top-left) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(60% 55% at 18% 12%, color-mix(in oklab, var(--gold) 28%, transparent) 0%, transparent 65%)",
+          }}
+        />
+        {/* Brand atmospheric tint */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in oklab, var(--emerald) 10%, transparent) 0%, transparent 45%, color-mix(in oklab, var(--forest-deep) 14%, transparent) 100%)",
+          }}
+        />
+        {/* Left readability veil (desktop) */}
+        <div
+          className="absolute inset-0 hidden lg:block"
+          style={{
+            background:
+              "linear-gradient(90deg, color-mix(in oklab, var(--cream) 94%, transparent) 0%, color-mix(in oklab, var(--cream) 70%, transparent) 35%, transparent 60%)",
+          }}
+        />
+        {/* Mobile/tablet readability veil (top-to-bottom) */}
+        <div
+          className="absolute inset-0 lg:hidden"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in oklab, var(--cream) 85%, transparent) 0%, color-mix(in oklab, var(--cream) 55%, transparent) 55%, transparent 100%)",
+          }}
+        />
+        {/* Right-side depth vignette behind portrait */}
+        <div
+          className="absolute inset-0 hidden lg:block"
+          style={{
+            background:
+              "radial-gradient(45% 60% at 82% 55%, color-mix(in oklab, var(--forest-deep) 22%, transparent) 0%, transparent 70%)",
+          }}
+        />
+        {/* Top edge softener for navbar contrast */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-cream/70 to-transparent" />
+        {/* Bottom blend into next section */}
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
@@ -72,18 +118,40 @@ export function Hero() {
           {/* RIGHT */}
           <div className="relative animate-fade-in">
             <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Decorative gold ring backdrop */}
+              {/* Decorative depth blobs */}
               <div className="absolute inset-0 -z-10">
-                <div className="absolute top-0 right-0 size-[85%] rounded-full bg-gradient-to-br from-emerald/25 via-olive/15 to-transparent blur-2xl" />
+                <div className="absolute -top-6 -right-6 size-[85%] rounded-full bg-gradient-to-br from-emerald/30 via-olive/15 to-transparent blur-3xl" />
+                <div className="absolute -bottom-10 -left-6 size-[55%] rounded-full bg-gradient-to-tr from-forest-deep/25 via-forest/10 to-transparent blur-3xl" />
               </div>
 
-              <div className="relative rounded-[42%_42%_38%_38%/45%_45%_38%_38%] overflow-hidden ring-4 ring-gold/60 shadow-elegant bg-gradient-to-b from-forest/10 to-emerald/20 aspect-[3/4]">
-                <img
-                  src={akSingal}
-                  alt="A.K. Singal, C.M.D. of Saniya Agriculture Solution"
-                  className="w-full h-full object-cover object-center"
-                  loading="eager"
-                />
+              {/* Gradient ring frame (gold → emerald) */}
+              <div
+                className="relative rounded-[42%_42%_38%_38%/45%_45%_38%_38%] p-[3px] shadow-elegant aspect-[3/4]"
+                style={{
+                  background:
+                    "linear-gradient(160deg, var(--gold) 0%, color-mix(in oklab, var(--gold) 60%, var(--emerald)) 45%, var(--forest) 100%)",
+                  filter: "drop-shadow(0 25px 40px color-mix(in oklab, var(--forest-deep) 30%, transparent))",
+                }}
+              >
+                {/* Cream hairline */}
+                <div className="relative h-full w-full rounded-[42%_42%_38%_38%/45%_45%_38%_38%] p-[2px] bg-cream/80">
+                  <div className="relative h-full w-full rounded-[42%_42%_38%_38%/45%_45%_38%_38%] overflow-hidden bg-gradient-to-b from-forest/10 to-emerald/20">
+                    <img
+                      src={akSingal}
+                      alt="A.K. Singal, C.M.D. of Saniya Agriculture Solution"
+                      className="w-full h-full object-cover object-center"
+                      loading="eager"
+                    />
+                    {/* Studio top-light + bottom forest glow */}
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, color-mix(in oklab, var(--cream) 22%, transparent) 0%, transparent 35%), radial-gradient(80% 60% at 50% 110%, color-mix(in oklab, var(--forest-deep) 30%, transparent) 0%, transparent 60%)",
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Floating cards */}
