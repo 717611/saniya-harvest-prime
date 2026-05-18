@@ -118,18 +118,40 @@ export function Hero() {
           {/* RIGHT */}
           <div className="relative animate-fade-in">
             <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Decorative gold ring backdrop */}
+              {/* Decorative depth blobs */}
               <div className="absolute inset-0 -z-10">
-                <div className="absolute top-0 right-0 size-[85%] rounded-full bg-gradient-to-br from-emerald/25 via-olive/15 to-transparent blur-2xl" />
+                <div className="absolute -top-6 -right-6 size-[85%] rounded-full bg-gradient-to-br from-emerald/30 via-olive/15 to-transparent blur-3xl" />
+                <div className="absolute -bottom-10 -left-6 size-[55%] rounded-full bg-gradient-to-tr from-forest-deep/25 via-forest/10 to-transparent blur-3xl" />
               </div>
 
-              <div className="relative rounded-[42%_42%_38%_38%/45%_45%_38%_38%] overflow-hidden ring-4 ring-gold/60 shadow-elegant bg-gradient-to-b from-forest/10 to-emerald/20 aspect-[3/4]">
-                <img
-                  src={akSingal}
-                  alt="A.K. Singal, C.M.D. of Saniya Agriculture Solution"
-                  className="w-full h-full object-cover object-center"
-                  loading="eager"
-                />
+              {/* Gradient ring frame (gold → emerald) */}
+              <div
+                className="relative rounded-[42%_42%_38%_38%/45%_45%_38%_38%] p-[3px] shadow-elegant aspect-[3/4]"
+                style={{
+                  background:
+                    "linear-gradient(160deg, var(--gold) 0%, color-mix(in oklab, var(--gold) 60%, var(--emerald)) 45%, var(--forest) 100%)",
+                  filter: "drop-shadow(0 25px 40px color-mix(in oklab, var(--forest-deep) 30%, transparent))",
+                }}
+              >
+                {/* Cream hairline */}
+                <div className="relative h-full w-full rounded-[42%_42%_38%_38%/45%_45%_38%_38%] p-[2px] bg-cream/80">
+                  <div className="relative h-full w-full rounded-[42%_42%_38%_38%/45%_45%_38%_38%] overflow-hidden bg-gradient-to-b from-forest/10 to-emerald/20">
+                    <img
+                      src={akSingal}
+                      alt="A.K. Singal, C.M.D. of Saniya Agriculture Solution"
+                      className="w-full h-full object-cover object-center"
+                      loading="eager"
+                    />
+                    {/* Studio top-light + bottom forest glow */}
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, color-mix(in oklab, var(--cream) 22%, transparent) 0%, transparent 35%), radial-gradient(80% 60% at 50% 110%, color-mix(in oklab, var(--forest-deep) 30%, transparent) 0%, transparent 60%)",
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Floating cards */}
