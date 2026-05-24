@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Phone, Menu, X, Leaf } from "lucide-react";
+import { Phone, Menu, X } from "lucide-react";
+import logo from "@/assets/saniya-logo-full.png";
 
 const links = [
   { label: "Home", href: "#home" },
