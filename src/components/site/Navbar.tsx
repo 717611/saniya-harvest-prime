@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Phone, Menu, X, Leaf } from "lucide-react";
+import { Phone, Menu, X } from "lucide-react";
+import logo from "@/assets/saniya-logo-full.png";
 
 const links = [
   { label: "Home", href: "#home" },
@@ -28,9 +29,14 @@ export function Navbar() {
       }`}
     >
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 lg:h-20 flex items-center justify-between">
-        <a href="#home" className="flex items-center gap-2.5">
-          <span className="size-10 rounded-full bg-forest/10 grid place-items-center">
-            <Leaf className="size-5 text-forest" />
+        <a href="#home" className="flex items-center gap-3">
+          <span className="size-11 lg:size-12 rounded-full bg-white shadow-soft ring-1 ring-forest/15 grid place-items-center overflow-hidden">
+            <img
+              src={logo}
+              alt="Saniya Agriculture Solution logo"
+              className="size-full object-contain p-1"
+              loading="eager"
+            />
           </span>
           <span className="font-display font-semibold leading-tight text-forest-deep text-sm sm:text-base">
             Saniya Agriculture
