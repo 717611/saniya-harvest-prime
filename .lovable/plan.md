@@ -1,78 +1,107 @@
-## Scope
+# Convert to client-only SPA for Vercel
 
-Only `src/components/site/Products.tsx` and new asset files. No other component, style, color, typography, or layout change.
+This is a destructive refactor. The Lovable preview pipeline assumes TanStack Start, so the in-Lovable preview may behave differently after this change and future Lovable edits may need adjustment. Visual code in `src/components/site/*` is NOT touched.
 
-## 1. Add new product assets
+## 1. Dependencies (`package.json`)
 
-Copy uploaded images into `src/assets/`:
-- `product-uttam-fasal.png` (file_00000000dfb87208a6c844cad4f5799d.png)
-- `product-raj-seeds.png` (replace, file_000000001bdc720891ec8e5a8eb07efb.png)
-- `product-yugm.png` (replace, file_00000000a7a47208b8229eed1411a405.png)
-- `product-eco-green.png` (file_000000002570720884ba5b3ac29ec437.png)
-- `product-silk.png` (file_00000000ca6c7208b4ba25183adede82.png)
-- `product-eco-granule.png` (file_000000008af07208986e5470020a2761.png)
-- `saniya-logo.png` (IMG_20260524_232843.jpg) for subtle card watermark
-- Keep existing `product-eco-root.png`
+Remove:
+- `@tanstack/react-start`
+- `@tanstack/react-start-plugin`* (if present)
+- `@cloudflare/vite-plugin`
+- `@lovable.dev/vite-tanstack-config`
+- `wrangler`
 
-## 2. Update subtitle
+Add:
+- `@vitejs/plugin-react`
+- `@tanstack/router-plugin` (file-based routing, client-only)
+- `vite-tsconfig-paths` (for `@/*` alias)
 
-Change subtitle text to: *"Premium agricultural solutions designed for healthier soil, stronger crops, and sustainable farming results."* Heading "Featured Products" and heading styles stay identical.
+Keep: all UI libs (`tailwindcss`, `@radix-ui/*`, `motion`, `lucide-react`, `sonner`, `recharts`, `@tanstack/react-router`, `@tanstack/react-query`, `embla-carousel-*`, `react`, `react-dom`, `class-variance-authority`, `clsx`, `tailwind-merge`, etc.).
 
-## 3. Extend product data (7 items)
+## 2. New build config
 
-Rewrite the `products` array with the 7 items provided, each with: `image`, `name`, `category`, `description`, `benefits[]`, optional `prices[]` / `packInfo` / `recommended` / `netContent`, `cta { label, icon, href }`, `badge`.
+**`vite.config.ts`** — standard client Vite config:
+```ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
+import tailwindcss from "@tailwindcss/vite";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
-CTA hrefs:
-- Order Now → `tel:+918852003393`
-- Enquire Now → `https://wa.me/918852003393`
-- Get Details / Learn More → `#contact`
+export default defineConfig({
+  plugins: [
+    TanStackRouterVite({ target: "react", autoCodeSplitting: true }),
+    react(),
+    tsconfigPaths(),
+    tailwindcss(),
+  ],
+  build: { outDir: "dist" },
+});
+```
 
-## 4. Slider behavior upgrade
+**`index.html`** at project root — standard Vite entry with `<div id="root">` and `<script type="module" src="/src/main.tsx">`, plus the Google Fonts preconnect/stylesheet links currently in `__root.tsx`.
 
-Replace the current manual `scrollBy` div-scroller with an autoplaying carousel while preserving existing card styling tokens (rounded-2xl, shadow-card, hover:shadow-elegant, border, forest-gradient CTA, emerald check icons, secondary/cream background).
+## 3. Client entry (`src/main.tsx`)
 
-- Use already-installed `embla-carousel-react` + add `embla-carousel-autoplay` plugin (single small dep, no heavy libs).
-- Responsive slidesPerView via existing Tailwind basis classes on `CarouselItem`: `basis-full md:basis-1/2 lg:basis-1/3`.
-- Autoplay 4500ms, `stopOnInteraction: false`, pause on hover via `onMouseEnter`/`onMouseLeave` calling `plugin.stop()` / `plugin.reset()`.
-- Navigation arrows: keep current circular arrow buttons (same styling, same position, same hover) but wire to embla `scrollPrev` / `scrollNext`.
-- Pagination dots: small row under the slider — `size-2 rounded-full` dots, active = `bg-forest w-6`, inactive = `bg-forest/25`, click to scroll. Uses the existing forest/emerald palette only.
+New file: creates `QueryClient`, calls `getRouter()`, wraps in `<QueryClientProvider>` + `<RouterProvider router={router}>`, mounts to `#root` via `createRoot`. Imports `./styles.css`.
 
-## 5. Card upgrades (within existing styling envelope)
+## 4. Router (`src/router.tsx`)
 
-Same card shell (`bg-card rounded-2xl shadow-card hover:shadow-elegant border border-border`, same hover lift via existing transition). Inside each card:
+Keep `getRouter()` shape but remove SSR-only options. Export a singleton `router` for `main.tsx`. No changes to `defaultPreloadStaleTime`/`scrollRestoration`.
 
-- Top-right small **badge pill** (`bg-gold/15 text-forest-deep` or `bg-emerald/10 text-emerald` depending on badge type) — uses existing tokens, no new colors.
-- Top-left subtle **Saniya logo watermark** (~28px, `opacity-60`) over image area.
-- Image area unchanged (aspect-[4/3], same gradient backdrop, same drop-shadow, same hover scale).
-- Product name (existing font-display style).
-- New small **category** line under name (`text-xs uppercase tracking-wider text-emerald`).
-- Short **description** (`text-sm text-muted-foreground`, 2-line clamp).
-- Benefits list (same Check icon, emerald, same spacing).
-- Pricing/pack block reused for products that have it; for products without prices show a single muted pack/usage chip (e.g., "Net 1 Litre", "50 KG · 50–60 KG/Acre") in the same chip style — no new component.
-- CTA button identical to current `bg-forest-gradient` rounded-full button.
+Add module augmentation:
+```ts
+declare module "@tanstack/react-router" {
+  interface Register { router: ReturnType<typeof getRouter> }
+}
+```
 
-All spacing, paddings, font sizes, shadows, colors match current card exactly.
+## 5. Root route (`src/routes/__root.tsx`)
 
-## 6. Performance
+Replace SSR shell with a client-only root:
+- Remove `shellComponent`, `HeadContent`, `Scripts`, `appCss` import.
+- Keep `createRootRouteWithContext<{ queryClient }>()`, `NotFoundComponent`, `ErrorComponent`.
+- Replace `head()` meta with `react-helmet`-free approach: set `document.title` from a small hook OR keep static `<title>` in `index.html`. Use the simple approach — put base meta in `index.html`, and for the index route set `document.title` inside a `useEffect`.
 
-- First 3 product images: `loading="eager"` + `fetchpriority="high"`.
-- Remaining 4: `loading="lazy"` + `decoding="async"`.
-- No new heavy libs (only `embla-carousel-autoplay`, ~2KB).
-- Pure CSS transitions, no Motion additions here.
+Per-route SEO (`src/routes/index.tsx` `head()`) is removed; replaced with a tiny `useDocumentTitle` effect in the component for the homepage title/description.
 
-## 7. Responsive
+## 6. Files to delete
 
-- Mobile (`basis-full`): 1 card.
-- Tablet (`md:basis-1/2`): 2 cards.
-- Desktop (`lg:basis-1/3`): 3 cards.
-- Arrows hidden on mobile (current behavior preserved — `hidden lg:grid`).
-- Dots visible all breakpoints, centered under slider.
+- `src/server.ts`
+- `src/start.ts`
+- `src/lib/error-capture.ts`
+- `src/lib/error-page.ts`
+- `wrangler.jsonc`
+- `src/routeTree.gen.ts` (regenerated by router plugin on dev/build)
 
-## Files touched
+## 7. Vercel config
 
-- `src/components/site/Products.tsx` — rewrite internals only.
-- `src/assets/product-uttam-fasal.png`, `product-eco-green.png`, `product-silk.png`, `product-eco-granule.png`, `saniya-logo.png` — new.
-- `src/assets/product-yugm.png`, `product-raj-seeds.png` — replaced with uploaded renders.
-- `package.json` / `bun.lock` — add `embla-carousel-autoplay`.
+Add `vercel.json` at root with SPA fallback:
+```json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+Vercel "Vite" preset will detect `dist/` automatically.
 
-Nothing else in the project is modified.
+## 8. tsconfig
+
+Remove `@tanstack/react-start` module augmentations (already only in `routeTree.gen.ts`, regenerated). No manual edits needed.
+
+## 9. Untouched
+
+- All `src/components/**` (site sections, UI primitives)
+- `src/styles.css`, `tailwind` tokens
+- `src/hooks/use-mobile.tsx`, `src/lib/utils.ts`
+- `src/assets/**`
+- All product/hero/navbar work from previous turns
+
+## GitHub push
+
+If the project is connected to GitHub via the Lovable integration, every Lovable edit auto-syncs to the connected repo — no manual push step is needed. If GitHub isn't connected yet, connect it from the `+` menu → GitHub → Connect project, and the SPA codebase will sync automatically.
+
+## Risk summary
+
+- Lovable's in-editor preview is built around TanStack Start's SSR entry; after this refactor the preview will run as a plain Vite SPA dev server. It should still work, but is no longer the "blessed" template.
+- The Lovable Publish button targets the Cloudflare Worker output and will likely stop working — Vercel becomes the canonical deploy target.
+- Future Lovable AI edits may try to re-add TanStack Start patterns; you may need to nudge them back to SPA conventions.
