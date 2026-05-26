@@ -1,107 +1,67 @@
-# Convert to client-only SPA for Vercel
+## Diagnosis
 
-This is a destructive refactor. The Lovable preview pipeline assumes TanStack Start, so the in-Lovable preview may behave differently after this change and future Lovable edits may need adjustment. Visual code in `src/components/site/*` is NOT touched.
+The local `index.html` is already a **proper file** (1275 bytes, `100644 blob` in git) with the correct Vite SPA entry — `<div id="root">`, `<script type="module" src="/src/main.tsx">`, and the Google Fonts links. There is no `index.html/` directory anywhere in the repo.
 
-## 1. Dependencies (`package.json`)
+So the EISDIR error is **not** a missing/broken file in the codebase. The most likely causes, in order:
 
-Remove:
-- `@tanstack/react-start`
-- `@tanstack/react-start-plugin`* (if present)
-- `@cloudflare/vite-plugin`
-- `@lovable.dev/vite-tanstack-config`
-- `wrangler`
+1. **Stale Vercel build cache** — an earlier failed deploy created `index.html` as a directory inside the cached `dist/` (or `.vercel/output/`). New builds then trip on it.
+2. **Wrong Framework Preset in Vercel** — if the project is set to a preset that conflicts with Vite (e.g. "Other" with custom output, or a leftover TanStack Start preset), the build can mis-handle `index.html`.
+3. **Output directory mismatch** — Vite outputs to `dist/`, but Vercel may be looking elsewhere.
 
-Add:
-- `@vitejs/plugin-react`
-- `@tanstack/router-plugin` (file-based routing, client-only)
-- `vite-tsconfig-paths` (for `@/*` alias)
+Since the file is already correct, just rewriting it locally will not fix the Vercel build. The fix needs to be done on both sides.
 
-Keep: all UI libs (`tailwindcss`, `@radix-ui/*`, `motion`, `lucide-react`, `sonner`, `recharts`, `@tanstack/react-router`, `@tanstack/react-query`, `embla-carousel-*`, `react`, `react-dom`, `class-variance-authority`, `clsx`, `tailwind-merge`, etc.).
+## Plan
 
-## 2. New build config
+### 1. Re-create `index.html` cleanly (defensive)
 
-**`vite.config.ts`** — standard client Vite config:
-```ts
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
-import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+Even though it looks fine, delete and rewrite it so the new commit invalidates any path-based cache key on Vercel. Content stays identical to the current version:
 
-export default defineConfig({
-  plugins: [
-    TanStackRouterVite({ target: "react", autoCodeSplitting: true }),
-    react(),
-    tsconfigPaths(),
-    tailwindcss(),
-  ],
-  build: { outDir: "dist" },
-});
+- `<!doctype html>` + `<html lang="en">`
+- meta charset/viewport, SEO title + description, og:* and twitter:* tags, canonical
+- Google Fonts preconnect + Manrope + Poppins stylesheet
+- `<body>` with `<div id="root"></div>` and `<script type="module" src="/src/main.tsx"></script>`
+
+### 2. Add a `.vercelignore` to keep build inputs clean
+
+Exclude `dist`, `.vercel`, `node_modules` so no stale local artifact accidentally gets uploaded:
+
+```text
+node_modules
+dist
+.vercel
 ```
 
-**`index.html`** at project root — standard Vite entry with `<div id="root">` and `<script type="module" src="/src/main.tsx">`, plus the Google Fonts preconnect/stylesheet links currently in `__root.tsx`.
+### 3. Verify locally with a production build
 
-## 3. Client entry (`src/main.tsx`)
+Run `bun run build` and confirm `dist/index.html` is created as a file (not a directory). If this passes locally, the codebase is provably correct and any remaining failure is Vercel-side.
 
-New file: creates `QueryClient`, calls `getRouter()`, wraps in `<QueryClientProvider>` + `<RouterProvider router={router}>`, mounts to `#root` via `createRoot`. Imports `./styles.css`.
+### 4. Vercel-side actions (user must do these — agent cannot)
 
-## 4. Router (`src/router.tsx`)
+These steps must be performed by the user in the Vercel dashboard. The agent can only fix the code:
 
-Keep `getRouter()` shape but remove SSR-only options. Export a singleton `router` for `main.tsx`. No changes to `defaultPreloadStaleTime`/`scrollRestoration`.
+- **Project Settings → General → Framework Preset:** set to **Vite**.
+- **Build & Development Settings:**
+  - Build Command: `bun run build` (or leave as preset default `vite build`)
+  - Output Directory: `dist`
+  - Install Command: `bun install` (or default)
+- **Deployments → latest failed deploy → ⋯ menu → Redeploy → uncheck "Use existing Build Cache"**. This is the actual fix for EISDIR — it wipes the cached `index.html` directory.
 
-Add module augmentation:
-```ts
-declare module "@tanstack/react-router" {
-  interface Register { router: ReturnType<typeof getRouter> }
-}
-```
+### 5. Confirm `vercel.json` is correct for SPA
 
-## 5. Root route (`src/routes/__root.tsx`)
-
-Replace SSR shell with a client-only root:
-- Remove `shellComponent`, `HeadContent`, `Scripts`, `appCss` import.
-- Keep `createRootRouteWithContext<{ queryClient }>()`, `NotFoundComponent`, `ErrorComponent`.
-- Replace `head()` meta with `react-helmet`-free approach: set `document.title` from a small hook OR keep static `<title>` in `index.html`. Use the simple approach — put base meta in `index.html`, and for the index route set `document.title` inside a `useEffect`.
-
-Per-route SEO (`src/routes/index.tsx` `head()`) is removed; replaced with a tiny `useDocumentTitle` effect in the component for the homepage title/description.
-
-## 6. Files to delete
-
-- `src/server.ts`
-- `src/start.ts`
-- `src/lib/error-capture.ts`
-- `src/lib/error-page.ts`
-- `wrangler.jsonc`
-- `src/routeTree.gen.ts` (regenerated by router plugin on dev/build)
-
-## 7. Vercel config
-
-Add `vercel.json` at root with SPA fallback:
+Current file is fine and stays:
 ```json
-{
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
 ```
-Vercel "Vite" preset will detect `dist/` automatically.
 
-## 8. tsconfig
+## Files touched
 
-Remove `@tanstack/react-start` module augmentations (already only in `routeTree.gen.ts`, regenerated). No manual edits needed.
+- `index.html` — deleted and recreated identically (cache-busting commit)
+- `.vercelignore` — created
 
-## 9. Untouched
+## Files untouched
 
-- All `src/components/**` (site sections, UI primitives)
-- `src/styles.css`, `tailwind` tokens
-- `src/hooks/use-mobile.tsx`, `src/lib/utils.ts`
-- `src/assets/**`
-- All product/hero/navbar work from previous turns
+- `vercel.json`, `vite.config.ts`, `src/main.tsx`, `src/router.tsx`, `src/routes/**`, `src/components/**`, all assets and styles.
 
-## GitHub push
+## Why not just "delete the directory"
 
-If the project is connected to GitHub via the Lovable integration, every Lovable edit auto-syncs to the connected repo — no manual push step is needed. If GitHub isn't connected yet, connect it from the `+` menu → GitHub → Connect project, and the SPA codebase will sync automatically.
-
-## Risk summary
-
-- Lovable's in-editor preview is built around TanStack Start's SSR entry; after this refactor the preview will run as a plain Vite SPA dev server. It should still work, but is no longer the "blessed" template.
-- The Lovable Publish button targets the Cloudflare Worker output and will likely stop working — Vercel becomes the canonical deploy target.
-- Future Lovable AI edits may try to re-add TanStack Start patterns; you may need to nudge them back to SPA conventions.
+There is no directory to delete in the repo — `ls -la index.html` shows a regular file and `git ls-tree` confirms it's a blob. Telling Vite/Vercel to "delete the index.html directory" locally would be a no-op. The directory only exists in Vercel's build cache, which is why step 4 (redeploy without cache) is the real fix.
