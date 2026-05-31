@@ -6,9 +6,20 @@ export function Hero() {
   return (
     <section
       id="home"
-      className="relative min-h-[100svh] flex flex-col md:flex-row overflow-hidden pt-20 lg:pt-24"
+      className="relative min-h-[100svh] md:flex md:flex-row overflow-hidden"
     >
-      {/* Desktop background */}
+      {/* MOBILE background image */}
+      <img
+        src={heroPortrait}
+        alt="Saniya Agriculture Solution product lineup in the field"
+        className="md:hidden absolute inset-0 w-full h-full object-cover object-bottom"
+        loading="eager"
+        fetchPriority="high"
+      />
+      {/* MOBILE gradient overlay for legibility */}
+      <div className="md:hidden absolute inset-0 bg-gradient-to-b from-white/95 via-white/70 to-transparent" />
+
+      {/* DESKTOP background */}
       <img
         src={heroLandscape}
         alt="Saniya Agriculture Solution organic fertilizers, manures and seeds product range"
@@ -23,11 +34,9 @@ export function Hero() {
             "linear-gradient(90deg, color-mix(in oklab, var(--cream) 92%, transparent) 0%, color-mix(in oklab, var(--cream) 70%, transparent) 40%, transparent 70%), linear-gradient(180deg, color-mix(in oklab, var(--cream) 60%, transparent) 0%, transparent 40%, color-mix(in oklab, var(--forest-deep) 20%, transparent) 100%)",
         }}
       />
-      {/* Mobile soft background tint */}
-      <div className="md:hidden absolute inset-0 -z-10 bg-gradient-to-b from-cream via-background to-background" />
 
-      {/* TEXT */}
-      <div className="relative z-10 w-full md:w-1/2 px-4 sm:px-6 lg:px-12 pt-6 md:pt-16 flex flex-col justify-center">
+      {/* TEXT + CTA */}
+      <div className="relative z-10 w-full md:w-1/2 flex flex-col justify-start pt-24 pb-8 px-4 sm:px-6 lg:px-12 md:justify-center md:pt-16">
         <div className="animate-fade-up max-w-xl">
           <h1 className="font-display font-bold text-forest-deep text-3xl md:text-4xl lg:text-5xl leading-tight text-balance">
             BUY BEST QUALITY Bio organic fertilizers, Manures, Phosphorus & Seeds.
@@ -53,14 +62,6 @@ export function Hero() {
           </div>
         </div>
       </div>
-
-      {/* MOBILE IMAGE */}
-      <img
-        src={heroPortrait}
-        alt="Saniya Agriculture Solution product lineup in the field"
-        className="md:hidden w-full h-1/2 object-contain mt-auto"
-        loading="eager"
-      />
     </section>
   );
 }
